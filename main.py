@@ -1,10 +1,10 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
-from pdf2image import convert_from_path
 from rapidfuzz import fuzz
 from database import init_db, get_connection, search_voters_by_name_prefix
 from ocr_engine import run_ocr
 from parser import parse_voters
 from pdf_text_extractor import extract_pdf_text_by_page
+from pdf_renderer import get_pdf_page_count, render_pdf_page
 import os
 import logging
 from dotenv import load_dotenv
@@ -61,27 +61,10 @@ async def upload_pdf(file: UploadFile = File(...)):
                 ocr_pages_used += 1
         else:
             logger.info("No usable selectable text found. Falling back to OCR for the full PDF.")
-            poppler_path = os.getenv("POPPLER_PATH")
-            if not poppler_path:
-                logger.warning("POPPLER_PATH not set in environment. Falling back to default.")
-
-            try:
-                images = convert_from_path(
-                    temp_path,
-                    dpi=300,
-                    poppler_path=poppler_path
-                )
-            except Exception as e:
-                logger.error(f"PDF conversion failed: {e}")
-                raise HTTPException(status_code=500, detail=f"Failed to convert PDF: {str(e)}")
-
-            for i, img in enumerate(images):
-                try:
-                    lines = run_ocr(img)
-                    all_lines.extend(lines)
-                    ocr_pages_used += 1
-                except Exception as e:
-                    logger.error(f"OCR failed for page {i+1}: {e}")
+            page_count = len(text_pages) if text_pages else get_pdf_page_count(temp_path)
+            for page_number in range(1, page_count + 1):
+                all_lines.extend(run_ocr_for_page(temp_path, page_number))
+                ocr_pages_used += 1
 
         voters = parse_voters(all_lines)
         if not voters:
@@ -107,29 +90,17 @@ async def upload_pdf(file: UploadFile = File(...)):
 
 
 def run_ocr_for_page(pdf_path, page_number):
-    poppler_path = os.getenv("POPPLER_PATH")
-    if not poppler_path:
-        logger.warning("POPPLER_PATH not set in environment. Falling back to default.")
+    try:
+        image = render_pdf_page(pdf_path, page_number, dpi=300)
+    except Exception as e:
+        logger.error(f"PDF rendering failed for page {page_number}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to render PDF page {page_number}: {str(e)}")
 
     try:
-        images = convert_from_path(
-            pdf_path,
-            dpi=300,
-            first_page=page_number,
-            last_page=page_number,
-            poppler_path=poppler_path,
-        )
+        return run_ocr(image)
     except Exception as e:
-        logger.error(f"PDF conversion failed for page {page_number}: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to convert PDF page {page_number}: {str(e)}")
-
-    page_lines = []
-    for img in images:
-        try:
-            page_lines.extend(run_ocr(img))
-        except Exception as e:
-            logger.error(f"OCR failed for page {page_number}: {e}")
-    return page_lines
+        logger.error(f"OCR failed for page {page_number}: {e}")
+        return []
 
 
 def save_voters(voters):

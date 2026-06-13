@@ -53,35 +53,40 @@ def next_value(lines, index):
     return candidate
 
 
-def append_current(voters, current):
-    if current.get("voter_id"):
-        voters.append(current.copy())
+def assign_next(records, cursors, field, value):
+    if not value:
+        return
+
+    start = cursors.get(field, 0)
+    for index in range(start, len(records)):
+        if field not in records[index]:
+            records[index][field] = value
+            cursors[field] = index + 1
+            return
 
 
 def parse_voters(lines):
     voters = []
-    current = {}
+    cursors = {}
 
     normalized_lines = [clean_text(line) for line in lines if clean_text(line)]
 
     for index, line in enumerate(normalized_lines):
         voter_id = normalize_voter_id(line)
         if voter_id:
-            append_current(voters, current)
-            current = {"voter_id": voter_id}
+            voters.append({"voter_id": voter_id})
             continue
 
-        if not current:
+        if not voters:
             continue
 
         if re.search(r"\b(?:Name|Elector'?s Name|Name of Elector)\b", line, re.I) and not re.search(
-            r"\b(?:Father|Husband|Mother|Guardian)\b", line, re.I
+            r"\b(?:Father|Husband|Mother|Guardian)'?s?\b", line, re.I
         ):
             value = field_value(line, r"\b(?:Name|Elector'?s Name|Name of Elector)\b") or next_value(
                 normalized_lines, index
             )
-            if value:
-                current["name"] = value
+            assign_next(voters, cursors, "name", value)
             continue
 
         relation_value = field_value(
@@ -90,8 +95,7 @@ def parse_voters(lines):
         )
         if relation_value is not None:
             value = relation_value or next_value(normalized_lines, index)
-            if value:
-                current["fathers_name"] = value
+            assign_next(voters, cursors, "fathers_name", value)
             continue
 
         house_match = re.search(
@@ -100,21 +104,24 @@ def parse_voters(lines):
             re.I,
         )
         if house_match:
-            current["house_number"] = clean_text(house_match.group(1))
+            assign_next(voters, cursors, "house_number", clean_text(house_match.group(1)))
             continue
 
         age_match = re.search(r"\bAge\s*[:\-]?\s*(\d{1,3})\b", line, re.I)
         if age_match:
-            current["age"] = int(age_match.group(1))
+            assign_next(voters, cursors, "age", int(age_match.group(1)))
 
         gender_match = re.search(r"\b(Male|Female|Other)\b", line, re.I)
         if gender_match:
-            current["gender"] = gender_match.group(1).capitalize()
+            assign_next(voters, cursors, "gender", gender_match.group(1).capitalize())
 
         if re.search(r"\bPhoto\b.*\bAvailable\b", line, re.I):
-            current["photo_status"] = "Available"
+            assign_next(voters, cursors, "photo_status", "Available")
         elif re.search(r"\bPhoto\b.*\b(?:Not Available|Unavailable)\b", line, re.I):
-            current["photo_status"] = "Not Available"
+            assign_next(voters, cursors, "photo_status", "Not Available")
+        elif re.fullmatch(r"Available", line, re.I):
+            assign_next(voters, cursors, "photo_status", "Available")
+        elif re.fullmatch(r"(?:Not Available|Unavailable)", line, re.I):
+            assign_next(voters, cursors, "photo_status", "Not Available")
 
-    append_current(voters, current)
     return voters

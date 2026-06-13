@@ -8,7 +8,7 @@ This is a learning/demo project, not a production-grade voter database.
 
 - Upload an electoral roll PDF.
 - Try direct selectable-text extraction first with `pypdf`.
-- Fall back to PaddleOCR only for pages without usable selectable text.
+- Fall back to PyMuPDF page rendering plus PaddleOCR only for pages without usable selectable text.
 - Parse voter ID, name, relation name, house number, age, gender, and photo status.
 - Store parsed records in SQLite.
 - Search records by voter ID or approximate name.
@@ -21,6 +21,7 @@ This is a learning/demo project, not a production-grade voter database.
 |-- main.py                  # FastAPI routes
 |-- parser.py                # Text line parser
 |-- pdf_text_extractor.py    # Selectable PDF text extraction
+|-- pdf_renderer.py          # PDF page rendering for OCR fallback
 |-- ocr_engine.py            # PaddleOCR wrapper
 |-- database.py              # SQLite setup and queries
 |-- test_app.py              # Basic parser/database tests
@@ -40,9 +41,9 @@ The upload endpoint uses a hybrid path:
 
 1. Try `pypdf` text extraction on each page.
 2. If a page has enough selectable text, parse that text directly.
-3. If a page has no usable selectable text, convert only that page to an image and run PaddleOCR.
+3. If a page has no usable selectable text, render only that page to an image with PyMuPDF and run PaddleOCR.
 
-This is faster and usually more accurate than always converting every PDF page to an image. OCR is still needed for scanned PDFs because scanned pages do not contain selectable text.
+This is faster and usually more accurate than always running OCR. OCR is still needed for scanned PDFs because scanned pages do not contain selectable text.
 
 The upload response includes:
 
@@ -68,7 +69,7 @@ Copy the example environment file:
 copy .env.example .env
 ```
 
-Set `POPPLER_PATH` in `.env` to your local Poppler `bin` directory. Poppler is only needed when a page falls back to OCR.
+`POPPLER_PATH` is not required. OCR fallback uses PyMuPDF for page rendering.
 
 ## Run the API
 
