@@ -1,0 +1,68 @@
+[
+  {
+    "case_id": "single-line-fields",
+    "ocr_lines": [
+      "ABC1234560",
+      "Name : John Doe",
+      "Father's Name : Richard Doe",
+      "House No : 123/A",
+      "Age : 45 Gender : Male",
+      "Photo is Available"
+    ],
+    "expected_voters": [
+      {
+        "voter_id": "ABC1234560",
+        "name": "John Doe",
+        "fathers_name": "Richard Doe",
+        "house_number": "123/A",
+        "age": 45,
+        "gender": "Male",
+        "photo_status": "Available"
+      }
+    ]
+  },
+  {
+    "case_id": "multiline-fields",
+    "ocr_lines": [
+      "DET1234567",
+      "Name",
+      "Robert Brown",
+      "Father's Name",
+      "William Brown",
+      "House Number : 789",
+      "Age : 30 Gender : Male"
+    ],
+    "expected_voters": [
+      {
+        "voter_id": "DET1234567",
+        "name": "Robert Brown",
+        "fathers_name": "William Brown",
+        "house_number": "789",
+        "age": 30,
+        "gender": "Male"
+      }
+    ]
+  },
+  {
+    "case_id": "ocr-confused-id",
+    "ocr_lines": [
+      "XYZ987654O",
+      "Elector's Name- Jane Smith",
+      "Husband's Name- John Smith",
+      "House No- 456-B",
+      "Age- 42 Sex: Female",
+      "Photo Available"
+    ],
+    "expected_voters": [
+      {
+        "voter_id": "XYZ9876540",
+        "name": "Jane Smith",
+        "fathers_name": "John Smith",
+        "house_number": "456-B",
+        "age": 42,
+        "gender": "Female",
+        "photo_status": "Available"
+      }
+    ]
+  }
+]
