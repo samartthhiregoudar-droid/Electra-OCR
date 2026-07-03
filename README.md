@@ -2,7 +2,7 @@
 
 A small FastAPI project that extracts voter records from electoral roll PDFs, stores them in SQLite, and lets you search by voter ID or fuzzy name match.
 
-This is a learning/demo project, not a production-grade voter database.
+This is a learning/demo project, not a production-grade voter database and this is only for a type of particular dataset. But the core OCR engine can be used for other generic purposes.
 
 ## Features
 
@@ -23,13 +23,13 @@ This is a learning/demo project, not a production-grade voter database.
 |-- pdf_text_extractor.py    # Selectable PDF text extraction
 |-- pdf_renderer.py          # PDF page rendering for OCR fallback
 |-- ocr_engine.py            # PaddleOCR wrapper
-|-- database.py              # SQLite setup and queries
+|-- database.py              
 |-- test_app.py              # Basic parser/database tests
 |-- scripts/
 |   `-- evaluate_parser.py   # Accuracy metrics for parser fixtures
 |-- data/
 |   `-- evaluation_cases.json
-|-- uploads/                 # Local PDFs; ignored by Git
+|-- uploads/                 
 |-- requirements.txt
 |-- .env.example
 `-- .gitignore
