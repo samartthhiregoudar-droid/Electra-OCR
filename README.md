@@ -1,4 +1,4 @@
-# Electoral Roll Text Extraction API
+# ElectraOCR: High-Throughput Electoral Roll Information Extraction System
 
 A small FastAPI project that extracts voter records from electoral roll PDFs, stores them in SQLite, and lets you search by voter ID or fuzzy name match.
 
